@@ -54,7 +54,7 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void dropUsersTable() throws SQLException {
-        String schemaName = "new_schema";
+        String schemaName = "new_schema"; // сделать константами
         String tableName = "table_user";
         String sql = "DROP TABLE " + schemaName + "." + tableName;
 
@@ -93,18 +93,17 @@ public class UserDaoJDBCImpl implements UserDao {
         try (var connection = Util.getConnection();
              var statement = connection.prepareStatement(DELETE_SQL)) {
             statement.setLong(1, id);
-            System.out.println("Учетная запись юзера удалена.");
+            System.out.println(String.format("Учетная запись юзера c id = %d", id));
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public List<User> getAllUsers() throws SQLException {
+    public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
         try (var connection = Util.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet results = statement.executeQuery("SELECT * FROM new_schema.table_user")) {
+             ResultSet results = connection.createStatement().executeQuery("SELECT * FROM new_schema.table_user")) {
             while (results.next()) {
                 Long id = results.getLong("id");
                 String name = results.getString("name");
@@ -114,7 +113,14 @@ public class UserDaoJDBCImpl implements UserDao {
                 User user = new User(name, lastName, age);
                 user.setId(id);
                 users.add(user);
+                 /*User user = new User();
+                 * user.setId(results.getLong("id");
+                 * user.set
+                 *
+                 *  */
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
         return users;
     }

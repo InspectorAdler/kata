@@ -29,10 +29,8 @@ public class Main {
         System.out.println("Удаление юзера по id:");
         userService.removeUserById(3);
 
-        System.out.println("Удаление всех учетных записей в базе данных:");
         userService.cleanUsersTable();
 
-        System.out.println("Удаление таблице в базе данных:");
         userService.dropUsersTable();
 
     }
