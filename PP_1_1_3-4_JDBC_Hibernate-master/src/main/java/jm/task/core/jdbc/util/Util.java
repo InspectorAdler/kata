@@ -8,8 +8,18 @@ public class Util {
     private static final String USER = "root";
     private static final String PASSWORD = "root";
 
-    public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASSWORD);
+    private final static Connection INSTANCE;
+
+    static {
+        try {
+            INSTANCE = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Connection getConnection() {
+        return INSTANCE;
     }
 
     public static void closeConnection(Connection conn) {
