@@ -11,10 +11,10 @@ public class Main {
     public static void main(String[] args) throws SQLException {
 
         UserService userService = new UserServiceImpl();
-        System.out.println("Создание таблицы юзеров:");
-        userService.createUsersTable();
-        System.out.println("Повторное создание таблицы юзеров: ");
-        userService.createUsersTable();
+     //   System.out.println("Создание таблицы юзеров:");
+       // userService.createUsersTable();
+    //    System.out.println("Повторное создание таблицы юзеров: ");
+      //  userService.createUsersTable();
 
         System.out.println("Создание юзеров:");
         userService.saveUser("vova", "putin", 62);
@@ -29,9 +29,9 @@ public class Main {
         System.out.println("Удаление юзера по id:");
         userService.removeUserById(3);
 
-        userService.cleanUsersTable();
+       // userService.cleanUsersTable();
 
-        userService.dropUsersTable();
+       // userService.dropUsersTable();
 
     }
 }

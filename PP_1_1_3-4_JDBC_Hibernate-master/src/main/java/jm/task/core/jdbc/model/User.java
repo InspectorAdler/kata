@@ -3,26 +3,27 @@ package jm.task.core.jdbc.model;
 import javax.persistence.*;
 import java.util.Objects;
 
-@Table
+@Entity
+@Table(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column (name = "name", nullable = false)
     private String name;
 
-    @Column
+    @Column (name = "last_name", nullable = false)
     private String lastName;
 
-    @Column
-    private Byte age;
+    @Column (name = "age", nullable = false)
+    private Integer age;
 
     public User() {
 
     }
 
-    public User(String name, String lastName, Byte age) {
+    public User(String name, String lastName, Integer age) {
         this.name = name;
         this.lastName = lastName;
         this.age = age;
@@ -52,11 +53,11 @@ public class User {
         this.lastName = lastName;
     }
 
-    public Byte getAge() {
+    public Integer getAge() {
         return age;
     }
 
-    public void setAge(Byte age) {
+    public void setAge(Integer age) {
         this.age = age;
     }
 
