@@ -11,7 +11,7 @@ public interface UserDao {
 
     void saveUser(String name, String lastName, int age);
 
-    boolean removeUserById(long id);
+    void removeUserById(long id);
 
     List<User> getAllUsers() throws SQLException;
 

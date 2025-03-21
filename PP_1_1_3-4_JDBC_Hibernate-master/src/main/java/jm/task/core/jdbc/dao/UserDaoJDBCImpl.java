@@ -7,61 +7,66 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jm.task.core.jdbc.util.Util.SCHEMA_NAME;
+import static jm.task.core.jdbc.util.Util.TABLE_NAME;
+
 public class UserDaoJDBCImpl implements UserDao {
 
-    private final static String SAVE_SQL = """
-                    INSERT INTO new_schema.table_user (name, last_name, age)
-                    VALUES (?, ?, ?);
-                    """;
+    public final static String CREATE_USERS_TABLE = String.format("""
+             CREATE TABLE %s.%s (
+             id INT AUTO_INCREMENT,
+             name VARCHAR(100) NOT NULL,
+             last_name VARCHAR(100) NOT NULL,
+             age INT NOT NULL,
+             PRIMARY KEY (id));""", SCHEMA_NAME, TABLE_NAME);
+
+    private final static String CHECK_TABLE = """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = ? AND table_name = ?""";
+
+    public final static String SAVE_SQL = """
+            INSERT INTO new_schema.table_user
+                        (name, last_name, age)
+            VALUES (?, ?, ?);""";
 
     private final static String DELETE_SQL = """
-                    DELETE FROM new_schema.table_user WHERE id = ?;
-                    """;
+            DELETE FROM new_schema.table_user\s
+            WHERE id = ?;""";
+
+    public final static String DROP_TABLE = String.format("DROP TABLE %s.%s;", SCHEMA_NAME, TABLE_NAME);
+
+    public static final String TRUNCATE_TABLE = String.format("TRUNCATE TABLE %s.%s;", SCHEMA_NAME, TABLE_NAME);
 
     public UserDaoJDBCImpl() {
 
     }
 
     public void createUsersTable() throws SQLException {
-        String schemaName = "new_schema";
-        String tableName = "table_user";
-        String checkTableSql = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?";
-        String sql =
-                "CREATE TABLE " + schemaName + "." + tableName + " (" +
-                        " id INT AUTO_INCREMENT," +
-                        " name VARCHAR(100) NOT NULL," +
-                        " last_name VARCHAR(100) NOT NULL," +
-                        " age INT NOT NULL," +
-                        " PRIMARY KEY (id));";
-
         try (Connection conn = Util.getConnection();
-             PreparedStatement checkTable = conn.prepareStatement(checkTableSql);
+             PreparedStatement checkTable = conn.prepareStatement(CHECK_TABLE);
              Statement stmt = conn.createStatement()) {
 
-            checkTable.setString(1, schemaName);
-            checkTable.setString(2, tableName);
+            checkTable.setString(1, SCHEMA_NAME);
+            checkTable.setString(2, TABLE_NAME);
             ResultSet rs = checkTable.executeQuery();
             if (rs.next() && rs.getInt(1) == 1) {
-                System.out.println("Таблица " + tableName + " уже существует.");
+                System.out.printf("Таблица %s уже существует.%n", TABLE_NAME);
             } else {
-                stmt.executeUpdate(sql);
-                System.out.println("Таблица " + tableName + " создана.");
+                stmt.executeUpdate(CREATE_USERS_TABLE);
+                System.out.printf("Таблица %s создана.%n", TABLE_NAME);
             }
         } catch (SQLException e) {
             System.out.println("Создание таблицы юзеров отклонено.");
-            throw new SQLException(e);
+            throw e;
         }
     }
 
     public void dropUsersTable() throws SQLException {
-        String schemaName = "new_schema"; // сделать константами
-        String tableName = "table_user";
-        String sql = "DROP TABLE " + schemaName + "." + tableName;
-
         try (Connection conn = Util.getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
-            System.out.println("Таблица " + tableName + " удалена.");
+            stmt.execute(DROP_TABLE);
+            System.out.printf("Таблица %s удалена.%n", TABLE_NAME);
         } catch (SQLException e) {
             System.out.println("Удалить таблицу не удалось.");
             throw new SQLException(e);
@@ -69,32 +74,36 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void saveUser(String name, String lastName, int age) {
-        try(var connection = Util.getConnection();
-            var statement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
+        try (var connection = Util.getConnection();
+             var statement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, name);
             statement.setString(2, lastName);
             statement.setInt(3, age);
-
             statement.executeUpdate();
 
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
                     System.out.println("Порядковый номер юзера: " + keys.getInt(1));
                 } else {
-                    throw new SQLException("Creating user failed, no ID obtained.");
+                    throw new SQLException("Создание пользователя не удалось, идентификатор не получен.");
                 }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public boolean removeUserById(long id) {
-        try (var connection = Util.getConnection();
-             var statement = connection.prepareStatement(DELETE_SQL)) {
+    public void removeUserById(long id) {
+        try (Connection connection = Util.getConnection();
+             PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
             statement.setLong(1, id);
-            System.out.println(String.format("Учетная запись юзера c id = %d", id));
-            return statement.executeUpdate() > 0;
+            if (statement.executeUpdate() > 0) {
+                System.out.printf("Учетная запись юзера c id = %d была удалена.%n", id);
+            } else {
+                System.out.printf("Учетной запись юзера c id = %d не существует.%n", id);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -105,19 +114,12 @@ public class UserDaoJDBCImpl implements UserDao {
         try (var connection = Util.getConnection();
              ResultSet results = connection.createStatement().executeQuery("SELECT * FROM new_schema.table_user")) {
             while (results.next()) {
-                Long id = results.getLong("id");
-                String name = results.getString("name");
-                String lastName = results.getString("last_name");
-                byte age = results.getByte("age");
-
-                User user = new User(name, lastName, age);
-                user.setId(id);
-                users.add(user);
-                 /*User user = new User();
-                 * user.setId(results.getLong("id");
-                 * user.set
-                 *
-                 *  */
+                 User user = new User();
+                 user.setId(results.getLong("id"));
+                 user.setName(results.getString("name"));
+                 user.setLastName(results.getString("last_name"));
+                 user.setAge(results.getInt("age"));
+                 users.add(user);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -126,15 +128,10 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void cleanUsersTable() {
-        String schemaName = "new_schema";
-        String tableName = "table_user";
-        String sql = "TRUNCATE TABLE " + schemaName + "." + tableName;
-
         try (Connection conn = Util.getConnection();
              Statement stmt = conn.createStatement()) {
-
-            stmt.execute(sql);
-            System.out.println("Таблица " + schemaName + "." + tableName + " успешно очищена.");
+            stmt.execute(TRUNCATE_TABLE);
+            System.out.printf("Таблица %s.%s успешно очищена.%n", SCHEMA_NAME, TABLE_NAME);
         } catch (SQLException e) {
             System.out.println("Очистить таблицу не удалось: " + e.getMessage());
             throw new RuntimeException(e);
