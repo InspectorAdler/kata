@@ -25,10 +25,16 @@ public class UserDaoHibernateImpl implements UserDao {
     public void createUsersTable() {
         try (Session session = Util.openSession()) {
             Transaction transaction = session.beginTransaction();
-            NativeQuery<?> query = session.createNativeQuery(CREATE_USERS_TABLE);
+            NativeQuery<?> query = session.createNativeQuery(String.format("""
+                    CREATE TABLE %s (
+                    id INT AUTO_INCREMENT,
+                    name VARCHAR(100) NOT NULL,
+                    last_name VARCHAR(100) NOT NULL,
+                    age INT NOT NULL,
+                    PRIMARY KEY (id));""", "users"));
             query.executeUpdate();
             transaction.commit();
-            System.out.printf("Таблица %s создана.%n", TABLE_NAME);
+            System.out.printf("Таблица %s создана.%n", "users");
         } catch (HibernateException e) {
             System.out.println("ERROR");
         }
@@ -38,10 +44,10 @@ public class UserDaoHibernateImpl implements UserDao {
     public void dropUsersTable() {
         try(Session session = Util.openSession()) {
             Transaction transaction = session.beginTransaction();
-            NativeQuery<?> query = session.createNativeQuery(DROP_TABLE);
+            NativeQuery<?> query = session.createNativeQuery("DROP TABLE %s;", "users");
             query.executeUpdate();
             transaction.commit();
-            System.out.printf("Таблица %s удалена.%n", TABLE_NAME);
+            System.out.printf("Таблица %s удалена.%n", "users");
         } catch (HibernateException e) {
             System.out.println("ERROR");
         }
@@ -49,7 +55,7 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void saveUser(String name, String lastName, int age) {
-        System.out.printf("Создание юзера %s %s %d./n", name, lastName, age);
+        System.out.printf("Создание юзера %s %s %d.%n", name, lastName, age);
         try (Session session = Util.openSession()) {
             Transaction transaction = session.beginTransaction();
             User user = new User(name, lastName, age);
@@ -92,10 +98,10 @@ public class UserDaoHibernateImpl implements UserDao {
     public void cleanUsersTable() {
         try (Session session = Util.openSession()) {
             Transaction transaction = session.beginTransaction();
-            NativeQuery<?> query = session.createNativeQuery(TRUNCATE_TABLE);
+            NativeQuery<?> query = session.createNativeQuery("TRUNCATE TABLE %s;", "users");
             query.executeUpdate();
             transaction.commit();
-            System.out.printf("Таблица %s.%s успешно очищена.%n", SCHEMA_NAME, TABLE_NAME);
+            System.out.printf("Таблица %s успешно очищена.%n", "users");
         } catch (HibernateException e) {
             System.out.println("Очистить таблицу не удалось: " + e.getMessage());
             throw new RuntimeException(e);
